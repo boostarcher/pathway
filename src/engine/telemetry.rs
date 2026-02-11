@@ -10,6 +10,7 @@ use crate::{engine::dataflow::monitoring::ProberStats, env::parse_env_var};
 use arc_swap::ArcSwapOption;
 use itertools::Itertools;
 use log::{debug, error, info};
+#[cfg(unix)]
 use nix::sys::{
     resource::{getrusage, UsageWho},
     time::TimeValLike,
@@ -446,6 +447,7 @@ struct SystemMetrics {
 }
 
 impl SystemMetrics {
+    #[cfg(unix)]
     fn new(sys: &mut System, pid: Pid) -> Result<SystemMetrics> {
         Self::refresh_process_specifics(pid, sys);
 
@@ -456,6 +458,23 @@ impl SystemMetrics {
             memory_usage: sys.process(pid).map(sysinfo::Process::memory),
             cpu_user_time: usage.user_time().num_seconds() as i64,
             cpu_system_time: usage.system_time().num_seconds() as i64,
+        })
+    }
+
+    #[cfg(windows)]
+    fn new(sys: &mut System, pid: Pid) -> Result<SystemMetrics> {
+        Self::refresh_process_specifics(pid, sys);
+
+        // On Windows, use sysinfo to get CPU times
+        let process = sys.process(pid);
+        let cpu_user_time = process
+            .map(|p| (p.cpu_usage() / 100.0) as i64)
+            .unwrap_or(0);
+        
+        Ok(Self {
+            memory_usage: process.map(sysinfo::Process::memory),
+            cpu_user_time,
+            cpu_system_time: 0, // Windows doesn't distinguish user/system time easily in sysinfo
         })
     }
 

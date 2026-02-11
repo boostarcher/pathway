@@ -5830,6 +5830,7 @@ dependencies = [
  "tonic 0.13.1",
  "usearch",
  "uuid",
+ "windows-sys 0.59.0",
  "xxhash-rust",
 ]
 

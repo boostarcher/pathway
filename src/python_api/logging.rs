@@ -188,6 +188,7 @@ pub fn init() -> ResetHandle {
 /// uninitialized to try to make it work (next send will recreate the logging thread) – otherwise
 /// there is no logging thread that will ever read the sent events and waiting for flush never
 /// ends.
+#[cfg(unix)]
 mod fork_hack {
     use std::ptr;
     use std::sync::atomic::{AtomicPtr, Ordering};
@@ -215,5 +216,15 @@ mod fork_hack {
         unsafe {
             libc::pthread_atfork(None, None, Some(child_handler));
         }
+    }
+}
+
+/// Windows does not have fork(), so this is a no-op
+#[cfg(windows)]
+mod fork_hack {
+    use super::Logger;
+
+    pub fn enable(_logger: &'static Logger) {
+        // Fork is not available on Windows, nothing to do
     }
 }

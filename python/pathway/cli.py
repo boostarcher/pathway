@@ -65,10 +65,11 @@ def spawn_program(
     if temp_root_directory is not None:
         repository_path, venv_path = get_temporary_paths(temp_root_directory)
         requirements_path = repository_path / "requirements.txt"
+        venv_bin = "Scripts" if sys.platform == "win32" else "bin"
         if program.startswith("python"):
-            program = venv_path / "bin" / program
+            program = venv_path / venv_bin / program
         if requirements_path.exists():
-            pip_path = venv_path / "bin" / "pip"
+            pip_path = venv_path / venv_bin / "pip"
             command = [
                 os.fspath(pip_path),
                 "install",

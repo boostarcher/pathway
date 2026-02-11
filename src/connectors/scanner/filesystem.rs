@@ -1,6 +1,4 @@
-use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
 use log::error;
@@ -11,6 +9,37 @@ use crate::connectors::ReadError;
 use crate::persistence::cached_object_storage::CachedObjectStorage;
 
 use glob::Pattern as GlobPattern;
+
+/// Convert bytes to PathBuf in a cross-platform way
+fn path_from_bytes(bytes: &[u8]) -> Result<PathBuf, ReadError> {
+    #[cfg(unix)]
+    {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+        Ok(OsStr::from_bytes(bytes).into())
+    }
+    #[cfg(not(unix))]
+    {
+        // On non-Unix platforms (Windows, macOS), try to interpret bytes as UTF-8
+        let path_str = std::str::from_utf8(bytes)
+            .map_err(|e| ReadError::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?;
+        Ok(PathBuf::from(path_str))
+    }
+}
+
+/// Convert PathBuf to bytes in a cross-platform way
+fn path_to_bytes(path: &PathBuf) -> Vec<u8> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        path.as_os_str().as_bytes().to_vec()
+    }
+    #[cfg(not(unix))]
+    {
+        // On non-Unix platforms, convert to string representation
+        path.to_string_lossy().as_bytes().to_vec()
+    }
+}
 
 #[derive(Debug)]
 #[allow(clippy::module_name_repetitions)]
@@ -24,7 +53,7 @@ impl PosixLikeScanner for FilesystemScanner {
         &mut self,
         object_path: &[u8],
     ) -> Result<Option<FileLikeMetadata>, ReadError> {
-        let path: PathBuf = OsStr::from_bytes(object_path).into();
+        let path = path_from_bytes(object_path)?;
         match std::fs::metadata(&path) {
             Ok(metadata) => Ok(Some(FileLikeMetadata::from_fs_meta(&path, &metadata))),
             Err(e) => {
@@ -38,7 +67,7 @@ impl PosixLikeScanner for FilesystemScanner {
     }
 
     fn read_object(&mut self, object_path: &[u8]) -> Result<Vec<u8>, ReadError> {
-        let path: PathBuf = OsStr::from_bytes(object_path).into();
+        let path = path_from_bytes(object_path)?;
         Ok(std::fs::read(path)?)
     }
 
@@ -80,7 +109,9 @@ impl FilesystemScanner {
     ) -> Vec<QueuedAction> {
         let mut result = Vec::new();
         for (encoded_path, stored_metadata) in cached_object_storage.get_iter() {
-            let path: PathBuf = OsStr::from_bytes(encoded_path).into();
+            let Ok(path) = path_from_bytes(encoded_path) else {
+                continue;
+            };
             match std::fs::metadata(&path) {
                 Err(e) => {
                     let is_deleted = e.kind() == std::io::ErrorKind::NotFound;
@@ -106,8 +137,8 @@ impl FilesystemScanner {
     ) -> Result<Vec<QueuedAction>, ReadError> {
         let mut result = Vec::new();
         for entry in self.get_matching_file_paths()? {
-            let object_key = entry.as_os_str().as_bytes();
-            if cached_object_storage.contains_object(object_key) {
+            let object_key = path_to_bytes(&entry);
+            if cached_object_storage.contains_object(&object_key) {
                 continue;
             }
             let metadata = match std::fs::metadata(&entry) {

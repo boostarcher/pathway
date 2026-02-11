@@ -80,7 +80,10 @@ use std::fs::File;
 use std::future::Future;
 use std::io::{BufWriter, Read};
 use std::mem::take;
-use std::os::unix::prelude::*;
+#[cfg(unix)]
+use std::os::unix::io::AsRawFd;
+#[cfg(windows)]
+use std::os::windows::io::AsRawHandle;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
@@ -7103,6 +7106,7 @@ impl PyExportedTable {
     }
 }
 
+#[cfg(unix)]
 #[allow(clippy::struct_field_names)]
 struct WakeupHandler<'py> {
     _fd: OwnedFd,
@@ -7110,6 +7114,7 @@ struct WakeupHandler<'py> {
     old_wakeup_fd: Bound<'py, PyAny>,
 }
 
+#[cfg(unix)]
 impl<'py> WakeupHandler<'py> {
     fn new(py: Python<'py>, fd: OwnedFd) -> PyResult<Option<Self>> {
         let signal_module = py.import(intern!(py, "signal"))?;
@@ -7132,6 +7137,7 @@ impl<'py> WakeupHandler<'py> {
     }
 }
 
+#[cfg(unix)]
 impl Drop for WakeupHandler<'_> {
     fn drop(&mut self) {
         self.set_wakeup_fd
@@ -7140,6 +7146,10 @@ impl Drop for WakeupHandler<'_> {
     }
 }
 
+#[cfg(windows)]
+type WakeupHandler<'py> = ();
+
+#[cfg(unix)]
 fn run_with_wakeup_receiver<R>(
     py: Python,
     logic: impl FnOnce(Option<WakeupReceiver>) -> R,
@@ -7171,6 +7181,16 @@ fn run_with_wakeup_receiver<R>(
         wakeup_thread.join().unwrap()
     }
     Ok(logic(Some(wakeup_receiver)))
+}
+
+#[cfg(windows)]
+fn run_with_wakeup_receiver<R>(
+    _py: Python,
+    logic: impl FnOnce(Option<WakeupReceiver>) -> R,
+) -> PyResult<R> {
+    // On Windows, signal handling works differently and set_wakeup_fd is not supported
+    // in the same way as Unix. Skip the signal wakeup mechanism.
+    Ok(logic(None))
 }
 
 static LOGGING_RESET_HANDLE: Lazy<ResetHandle> = Lazy::new(logging::init);

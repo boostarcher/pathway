@@ -13,6 +13,7 @@ use ed25519_dalek::VerifyingKey;
 use ed25519_dalek::{PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH};
 use hex::FromHex;
 use log::{debug, warn};
+#[cfg(unix)]
 use nix::sys::resource::Resource;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -26,6 +27,7 @@ const PATHWAY_LICENSE_SERVER: &str = "https://license.pathway.com";
 const PUBLIC_KEY: &str = "c6ef2abddc7da08f7c107649613a8f7dd853df3c54f6cafa656fc8b66fb3e8f3";
 const LICENSE_ALGORITHM: &str = "base64+ed25519";
 
+#[cfg(unix)]
 #[derive(Clone, Copy)]
 pub struct ResourceLimit(pub Resource, pub u64);
 

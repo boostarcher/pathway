@@ -113,7 +113,7 @@ You can install the current release of Pathway using `pip`:
 $ pip install -U pathway
 ```
 
-⚠️ Pathway is available on MacOS and Linux. Users of other systems should run Pathway on a Virtual Machine.
+⚠️ Pathway is available on macOS, Linux, and Windows.
 
 
 ### Example: computing the sum of positive values in real time.<a id="example"></a>
