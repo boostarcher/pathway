@@ -22,7 +22,7 @@ dependencies = [
     "pandas >= 2.1",
     "scikit-learn >= 1.0",
     "shapely >= 2.0.1",
-    "pyarrow >= 10.0.0, < 19.0.0",
+    "pyarrow >= 10.0.0",
     "requests >= 2.31.0",
     "python-sat >= 0.1.8.dev",
     "beartype >= 0.14.0, < 0.16.0",
@@ -50,7 +50,7 @@ dependencies = [
     "sqlalchemy >= 2.0.43",
     "sqlmodel >= 0.0.24",
     "fastapi >= 0.116.1",
-    "uvicorn >= 0.29.0"
+    "uvicorn >= 0.29.0",
 ]
 
 [project.optional-dependencies]
@@ -74,9 +74,9 @@ xpack-llm = [
     "google-api-core ~= 2.24.1",
     "fastmcp >= 2.11.0",
 ]
-xpack-llm-local = [  # requirements that allow local ML inference
-    "sentence_transformers", 
-    "transformers >= 4.42.0, <= 4.49.0",  # >= 4.50.2, this can be updated after docling updates
+xpack-llm-local = [# requirements that allow local ML inference
+    "sentence_transformers",
+    "transformers >= 4.42.0, <= 4.49.0", # >= 4.50.2, this can be updated after docling updates
 ]
 xpack-llm-docs = [
     "docling >= 2.27, < 2.67.0",
@@ -89,9 +89,7 @@ xpack-llm-docs = [
     "pdfminer.six == 20250506",
     "paddleocr[doc-parser] >= 3.3.1, < 4.0.0",
 ]
-xpack-sharepoint = [
-    "Office365-REST-Python-Client >= 2.5.3",
-]
+xpack-sharepoint = ["Office365-REST-Python-Client >= 2.5.3"]
 all = [
     "pathway[sql]",
     "pathway[xpack-llm]",
@@ -114,7 +112,7 @@ tests = [
     "cloudpickle >= 3.0.0",
     "fpdf",
     "paddlepaddle >= 3.2.0, < 3.3.0", # required by paddleocr
-    "paddlex >= 3.0.0, <= 3.3.8",  # pinning the latest working version, then the format changes
+    "paddlex >= 3.0.0, <= 3.3.8", # pinning the latest working version, then the format changes
     "aioboto3 >= 13.0.0",
 ]
 airbyte = [
@@ -159,10 +157,6 @@ strict_equality = true
 
 [tool.isort]
 profile = "black"
-skip = [
-    "target",
-    "docs",
-    "third_party",
-]
+skip = ["target", "docs", "third_party"]
 known_first_party = ["pathway"]
 combine_as_imports = true
