@@ -78,14 +78,12 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::CString;
 use std::fs::File;
 use std::future::Future;
-use std::io::{BufWriter, Read};
+use std::io::BufWriter;
 use std::mem::take;
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
-#[cfg(windows)]
-use std::os::windows::io::AsRawHandle;
 use std::sync::{Arc, Mutex};
-use std::thread;
+
 use std::time;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -123,7 +121,7 @@ use crate::connectors::scanner::{FilesystemScanner, S3Scanner};
 use crate::connectors::synchronization::ConnectorGroupDescriptor;
 use crate::connectors::{PersistenceMode, SessionType, SnapshotAccess};
 use crate::engine::dataflow::Config;
-use crate::engine::error::{DataError, DynError, DynResult, Trace as EngineTrace};
+use crate::engine::error::{DataError, DynResult, Trace as EngineTrace};
 use crate::engine::graph::ScopedContext;
 use crate::engine::progress_reporter::MonitoringLevel;
 use crate::engine::reduce::StatefulCombineFn;
@@ -149,7 +147,7 @@ use crate::persistence::config::{
 };
 use crate::persistence::input_snapshot::Event as SnapshotEvent;
 use crate::persistence::{IntoPersistentId, UniqueName};
-use crate::pipe::{pipe, ReaderType, WriterType};
+
 use crate::python_api::external_index_wrappers::PyExternalIndexFactory;
 use crate::timestamp::current_unix_timestamp_ms;
 

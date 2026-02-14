@@ -83,12 +83,10 @@ pub fn pipe(reader_type: ReaderType, writer_type: WriterType) -> io::Result<Pipe
 #[cfg(windows)]
 pub fn pipe(reader_type: ReaderType, writer_type: WriterType) -> io::Result<Pipe> {
     use std::os::windows::io::{FromRawHandle, OwnedHandle};
-    use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
-    use windows_sys::Win32::Storage::FileSystem::{
-        CreateNamedPipeA, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE, PIPE_WAIT,
-    };
+    use windows_sys::Win32::Foundation::{GENERIC_WRITE, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::Storage::FileSystem::PIPE_ACCESS_INBOUND;
     use windows_sys::Win32::System::Pipes::{
-        PIPE_UNLIMITED_INSTANCES,
+        CreateNamedPipeA, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, PIPE_WAIT,
     };
 
     unsafe {
@@ -99,7 +97,12 @@ pub fn pipe(reader_type: ReaderType, writer_type: WriterType) -> io::Result<Pipe
         let read_handle = CreateNamedPipeA(
             pipe_name_c.as_ptr() as *const u8,
             PIPE_ACCESS_INBOUND,
-            PIPE_TYPE_BYTE | if matches!(reader_type, ReaderType::NonBlocking) { 0 } else { PIPE_WAIT },
+            PIPE_TYPE_BYTE
+                | if matches!(reader_type, ReaderType::NonBlocking) {
+                    0
+                } else {
+                    PIPE_WAIT
+                },
             PIPE_UNLIMITED_INSTANCES,
             4096,
             4096,
@@ -113,7 +116,7 @@ pub fn pipe(reader_type: ReaderType, writer_type: WriterType) -> io::Result<Pipe
 
         // Open the write end of the pipe
         use windows_sys::Win32::Storage::FileSystem::{
-            CreateFileA, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, GENERIC_WRITE, OPEN_EXISTING,
+            CreateFileA, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, OPEN_EXISTING,
         };
 
         let write_handle = CreateFileA(
@@ -135,12 +138,20 @@ pub fn pipe(reader_type: ReaderType, writer_type: WriterType) -> io::Result<Pipe
             use windows_sys::Win32::System::Pipes::SetNamedPipeHandleState;
             use windows_sys::Win32::System::Pipes::PIPE_NOWAIT;
             let mode = PIPE_NOWAIT;
-            if SetNamedPipeHandleState(write_handle, &mode, std::ptr::null_mut(), std::ptr::null_mut()) == 0 {
+            if SetNamedPipeHandleState(
+                write_handle,
+                &mode,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            ) == 0
+            {
                 return Err(io::Error::last_os_error());
             }
         }
 
         Ok(Pipe {
-            reader: OwnedHandle::from_raw_handle(read_handle as *mut _),            writer: OwnedHandle::from_raw_handle(write_handle as *mut _),        })
+            reader: OwnedHandle::from_raw_handle(read_handle as *mut _),
+            writer: OwnedHandle::from_raw_handle(write_handle as *mut _),
+        })
     }
 }
